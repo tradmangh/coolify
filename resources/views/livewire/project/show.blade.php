@@ -250,6 +250,18 @@
                             first.name.localeCompare(second.name);
                     }
 
+                    const priority = {
+                        'production': 1,
+                        'staging': 2,
+                        'development': 3,
+                        'deprecated': 99,
+                    };
+                    const firstRank = priority[first.name.toLowerCase()] ?? 50;
+                    const secondRank = priority[second.name.toLowerCase()] ?? 50;
+                    if (firstRank !== secondRank) {
+                        return firstRank - secondRank;
+                    }
+
                     return first.name.localeCompare(second.name);
                 });
             },
