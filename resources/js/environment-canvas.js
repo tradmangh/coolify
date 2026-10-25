@@ -121,6 +121,18 @@ export const GROUP_GAP = 32;
 export const GROUPS_PER_ROW = 3;
 export const SINGLE_COLUMNS = 3;
 
+export const ENVIRONMENT_PRIORITY = {
+  production: 1,
+  staging: 2,
+  development: 3,
+  deprecated: 99,
+};
+
+export const compareEnvironments = (a, b) =>
+  (ENVIRONMENT_PRIORITY[String(a).toLowerCase()] ?? 50) -
+    (ENVIRONMENT_PRIORITY[String(b).toLowerCase()] ?? 50) ||
+  String(a).localeCompare(String(b));
+
 const contextGroups = nodes => {
   const groups = new Map();
   for (const n of nodes) {
@@ -130,7 +142,9 @@ const contextGroups = nodes => {
   }
   // Server view: the unmanaged containers group comes first, so it is not lost below many projects.
   const unmanaged = ([, members]) => (members[0]?.type === 'container' ? 0 : 1);
-  return [...groups.entries()].sort((a, b) => unmanaged(a) - unmanaged(b) || a[0].localeCompare(b[0]));
+  return [...groups.entries()].sort(
+    (a, b) => unmanaged(a) - unmanaged(b) || compareEnvironments(a[0], b[0])
+  );
 };
 const byTypeAndName = (a, b) => columnOf(a) - columnOf(b) || String(a.name).localeCompare(String(b.name));
 
@@ -648,8 +662,9 @@ export function filterOptions(graph) {
     projects.get(n.project.uuid).environments.set(n.environment.uuid, n.environment);
   }
   const byName = (a, b) => String(a.name).localeCompare(String(b.name));
+  const byEnv = (a, b) => compareEnvironments(a.name, b.name);
   return [...projects.values()]
-    .map(p => ({ uuid: p.uuid, name: p.name, environments: [...p.environments.values()].sort(byName) }))
+    .map(p => ({ uuid: p.uuid, name: p.name, environments: [...p.environments.values()].sort(byEnv) }))
     .sort(byName);
 }
 
