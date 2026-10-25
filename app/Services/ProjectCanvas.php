@@ -26,7 +26,12 @@ class ProjectCanvas
     {
         $projects = Project::query()->where('team_id', $teamId)->orderBy('name')->get(['id', 'uuid', 'name', 'team_id', 'canvas_position']);
         $environments = Environment::query()->whereIn('project_id', $projects->pluck('id'))
-            ->orderBy('id')
+            ->orderByRaw("CASE 
+                WHEN LOWER(name) = 'production' THEN 1 
+                WHEN LOWER(name) = 'staging' THEN 2 
+                WHEN LOWER(name) = 'development' THEN 3 
+                WHEN LOWER(name) = 'deprecated' THEN 99 
+                ELSE 50 END ASC, name ASC")
             ->get(['id', 'uuid', 'name', 'project_id']);
         $resources = $this->servers->loadResources($environments->pluck('id'));
         $links = ResourceLink::query()->whereIn('environment_id', $environments->pluck('id'))->orderBy('id')->get();
@@ -72,7 +77,14 @@ class ProjectCanvas
      */
     public function payload(Project $project, bool $canReadSensitive, bool $canEdit = false): array
     {
-        $environments = $project->environments()->orderBy('id')->get(['id', 'uuid', 'name', 'project_id']);
+        $environments = $project->environments()
+            ->orderByRaw("CASE 
+                WHEN LOWER(name) = 'production' THEN 1 
+                WHEN LOWER(name) = 'staging' THEN 2 
+                WHEN LOWER(name) = 'development' THEN 3 
+                WHEN LOWER(name) = 'deprecated' THEN 99 
+                ELSE 50 END ASC, name ASC")
+            ->get(['id', 'uuid', 'name', 'project_id']);
         $resources = $this->servers->loadResources($environments->pluck('id'));
         $links = ResourceLink::query()->whereIn('environment_id', $environments->pluck('id'))->orderBy('id')->get();
         $graph = $this->canvas->graph($resources, $links, $canReadSensitive);
